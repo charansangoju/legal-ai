@@ -1,0 +1,1 @@
+SUPPORTED=["en","hi","te"]

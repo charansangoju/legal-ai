@@ -1,0 +1,17 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+    ports: ["8000:8000"]
+    volumes: ["./backend:/app/backend", "./ai_engine:/app/ai_engine"]
+    env_file: [".env"]
+    environment:
+      - PYTHONPATH=/app:/app/backend
+      - OLLAMA_HOST=http://host.docker.internal:11434
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/frontend.Dockerfile
+    ports: ["5173:5173"]
+    depends_on: [backend]
