@@ -170,14 +170,15 @@ def generate_answer(question: str, contexts: list, full_text: str = "", user_api
                     print(f"[LLM] OpenAI success: {len(ans)} chars")
                     return ans.strip()
             else:
-                # Surface real error instead of silent fallback - helps user rectify 401/429
+                # Surface real error instead of silent fallback - helps user rectify 401/429 but still fallback to local engine
                 err_text = r.text[:800]
                 print(f"[LLM] OpenAI failed {r.status_code}: {err_text}")
                 if r.status_code in (401, 403):
-                    return f"⚠️ OpenAI API key invalid or unauthorized (HTTP {r.status_code}). Please check your OPENAI_API_KEY in .env or the 🔑 frontend input. Details: {err_text[:300]}"
-                if r.status_code == 429:
-                    return f"⚠️ OpenAI rate limit / quota exceeded (HTTP 429). {err_text[:300]}"
-                # For other errors fall through to next provider but keep log
+                    print(f"[LLM] OpenAI key invalid - falling back to local extractive engine")
+                    # continue to next providers / local fallback instead of hard error
+                elif r.status_code == 429:
+                    print(f"[LLM] OpenAI rate limited - falling back")
+                # For all errors fall through to next provider but keep log
         except Exception as e:
             print(f"[LLM] OpenAI error: {e}")
 
@@ -241,20 +242,23 @@ def generate_answer(question: str, contexts: list, full_text: str = "", user_api
         except Exception as e:
             print(f"[LLM] Groq error: {e}")
 
-    # 4. Local Ollama Provider
+    # 4. Local Ollama Provider - try available models
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434").strip()
-    try:
-        url = f"{ollama_host}/api/generate"
-        payload = {
-            "model": "llama3",
-            "prompt": f"{system_prompt}\n\n{user_prompt}",
-            "stream": False
-        }
-        r = requests.post(url, json=payload, timeout=5)
-        if r.status_code == 200 and r.json().get("response"):
-            return r.json()["response"].strip()
-    except Exception:
-        pass
+    for ollama_model in ["llama3.2:1b", "llama3.2", "llama3", "llama3:latest"]:
+        try:
+            url = f"{ollama_host}/api/generate"
+            payload = {
+                "model": ollama_model,
+                "prompt": f"{system_prompt}\n\n{user_prompt}",
+                "stream": False
+            }
+            r = requests.post(url, json=payload, timeout=30)
+            if r.status_code == 200 and r.json().get("response"):
+                print(f"[LLM] Ollama {ollama_model} success: {len(r.json().get('response',''))} chars")
+                return r.json()["response"].strip()
+        except Exception as e:
+            print(f"[LLM] Ollama {ollama_model} error: {e}")
+            continue
 
     # 5. Smart Local Legal Extractive RAG QA Engine (Fallback)
     return _local_extractive_answer(question, doc_context, contexts)

@@ -41,7 +41,11 @@ function fmt(bytes: number) {
 }
 
 function docIcon(type: string) {
-  const icons: Record<string, string> = { employment: "👔", nda: "🔒", loan: "💰", rental: "🏠", unknown: "📄" };
+  const icons: Record<string, string> = { 
+    employment: "👔", nda: "🔒", loan: "💰", rental: "🏠", 
+    unknown: "📄", general_legal: "⚖️", service_agreement: "🤝", 
+    partnership: "🏢", sales: "🛒" 
+  };
   return icons[type] || "📄";
 }
 
@@ -173,7 +177,7 @@ function UploadSection({
         >
           <input
             type="file"
-            accept=".pdf,.docx,.txt"
+            accept=".pdf,.docx,.doc,.txt,.rtf,.md"
             onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
           />
           <span className="upload-icon">☁️</span>
