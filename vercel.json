@@ -1,4 +1,4 @@
-
+```json
 {
   "services": {
     "frontend": {
@@ -7,23 +7,23 @@
     },
     "backend": {
       "root": "backend",
-      "entrypoint": "app/main.py"
+      "framework": "fastapi",
+      "entrypoint": "app.main:app"
     }
   },
   "rewrites": [
     {
-      "source": "/api(/.*)?",
+      "source": "/api/(.*)",
       "destination": {
-        "type": "service",
         "service": "backend"
       }
     },
     {
       "source": "/(.*)",
       "destination": {
-        "type": "service",
         "service": "frontend"
       }
     }
   ]
 }
+```
