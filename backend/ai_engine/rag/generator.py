@@ -107,9 +107,12 @@ def _local_extractive_answer(question: str, doc_context: str, contexts: list) ->
 
 
 def generate_answer(question: str, contexts: list, full_text: str = "", user_api_key: str = None) -> str:
-    # Reload environment variables in case .env was recently updated (override ensures fresh .env)
-    load_dotenv(override=True)
-    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"), override=True)
+    # Reload environment variables - don't override Vercel env vars
+    # If OPENAI_API_KEY already set (Vercel or user header), keep it
+    if not os.getenv("OPENAI_API_KEY") and not user_api_key:
+        load_dotenv(override=False)
+        load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
+        load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../../.env"), override=False)
     
     doc_context = ""
     if full_text and len(full_text.strip()) > 0:

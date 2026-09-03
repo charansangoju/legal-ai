@@ -5,13 +5,19 @@ from pydantic import BaseModel
 
 
 # Load local .env files when running locally.
+# Precedence: Vercel/system env > backend/.env > root .env (placeholder should not override real key)
+# Load backend/.env first (real key if present)
 load_dotenv(
-    dotenv_path=os.path.join(
-        os.path.dirname(__file__),
-        "../../../.env"
-    )
+    dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"),
+    override=False,
 )
-load_dotenv()
+# Then load root .env but don't override existing vars (so placeholder won't clobber real key)
+load_dotenv(
+    dotenv_path=os.path.join(os.path.dirname(__file__), "../../../.env"),
+    override=False,
+)
+# Also load CWD .env if any, without override
+load_dotenv(override=False)
 
 
 def _is_vercel() -> bool:
