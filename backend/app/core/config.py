@@ -14,6 +14,16 @@ load_dotenv(
 load_dotenv()
 
 
+def _is_vercel() -> bool:
+    """Robust Vercel detection - checks multiple env vars set by Vercel."""
+    return bool(
+        os.getenv("VERCEL")
+        or os.getenv("VERCEL_ENV")
+        or os.getenv("VERCEL_URL")
+        or os.getenv("VERCEL_PROJECT_ID")
+    )
+
+
 def get_database_url() -> str:
     """
     Get the PostgreSQL connection string from the deployment environment.
@@ -25,6 +35,8 @@ def get_database_url() -> str:
     - POSTGRES_PRISMA_URL
 
     SQLite is used only for local development.
+    On Vercel, PostgreSQL (Neon) is required because the filesystem is
+    read-only and ephemeral (except /tmp), so SQLite is not persistent.
     """
 
     database_url = (
@@ -38,7 +50,7 @@ def get_database_url() -> str:
         return database_url.strip().strip('"').strip("'")
 
     # Local development fallback.
-    if not os.getenv("VERCEL"):
+    if not _is_vercel():
         return "sqlite:///./legal_ai.db"
 
     # Never silently fall back to SQLite on Vercel.
