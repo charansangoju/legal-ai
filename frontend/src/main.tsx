@@ -375,14 +375,8 @@ function ChatSection({ docId, loading, setLoading }: { docId: number; loading: b
   const [question, setQuestion] = useState("");
   const [error, setError] = useState("");
   const [isListening, setIsListening] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("OPENAI_API_KEY") || "");
-  const [showKey, setShowKey] = useState(false);
-  const [llmStatus, setLlmStatus] = useState<any>(null);
+  // API key handled via backend env (Vercel OPENAI_API_KEY) - no UI needed
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    fetch(`${API}/chat/status`).then(r=>r.json()).then(setLlmStatus).catch(()=>{});
-  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -461,8 +455,6 @@ function ChatSection({ docId, loading, setLoading }: { docId: number; loading: b
     setTimeout(scrollToBottom, 50);
     try {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
-      const storedKey = localStorage.getItem("OPENAI_API_KEY") || apiKey;
-      if (storedKey && storedKey.startsWith("sk-")) headers["X-OpenAI-Key"] = storedKey;
       const r = await fetch(`${API}/chat`, {
         method: "POST",
         headers,
@@ -497,19 +489,6 @@ function ChatSection({ docId, loading, setLoading }: { docId: number; loading: b
         </div>
       </div>
       <div className="card-body">
-        {/* LLM Key Configuration - fixes extractive fallback */}
-        <div style={{ marginBottom: 12, padding: 10, background: llmStatus?.openai_configured ? "#ecfdf5" : "#fef3c7", border: `1px solid ${llmStatus?.openai_configured ? "#a7f3d0" : "#fcd34d"}`, borderRadius: 8 }}>
-          <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: 6 }}>
-            {llmStatus?.openai_configured ? "✅ OpenAI Connected" : "⚠️ No cloud LLM key detected (extractive mode)"} {llmStatus?.openai_key_prefix && <span style={{ fontWeight: 400, opacity: 0.7 }}>{llmStatus.openai_key_prefix}</span>}
-          </div>
-          {!llmStatus?.openai_configured && <div style={{ fontSize: "0.8rem", opacity: 0.8, marginBottom: 8 }}>Add your <code>OPENAI_API_KEY</code> here to enable full generative reasoning, or set it in Vercel → Settings → Environment Variables (recommended).</div>}
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type={showKey ? "text" : "password"} placeholder="sk-proj-..." value={apiKey} onChange={e=>setApiKey(e.target.value)} style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: "0.85rem" }} />
-            <button className="btn btn-outline btn-sm" onClick={()=>setShowKey(!showKey)}>{showKey ? "🙈 Hide" : "👁️ Show"}</button>
-            <button className="btn btn-primary btn-sm" onClick={()=>{localStorage.setItem("OPENAI_API_KEY", apiKey); fetch(`${API}/chat/status`).then(r=>r.json()).then(setLlmStatus); setError(""); alert(apiKey.startsWith("sk-") ? "Key saved locally!" : "Saved - but key should start with sk-");}}>💾 Save</button>
-            <button className="btn btn-outline btn-sm" onClick={()=>{localStorage.removeItem("OPENAI_API_KEY"); setApiKey(""); setLlmStatus(null); fetch(`${API}/chat/status`).then(r=>r.json()).then(setLlmStatus);}}>Clear</button>
-          </div>
-        </div>
         {messages.length === 0 && (
           <div style={{ marginBottom: 12 }}>
             <div className="section-title" style={{ marginBottom: 8 }}>Suggested Legal Questions</div>
